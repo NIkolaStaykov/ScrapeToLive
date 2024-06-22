@@ -86,8 +86,11 @@ class WGZimmerScraper(ScraperBase):
         self.driver.find_element(By.XPATH, '//input[@value="Suchen"]').click()
 
     def get_new_offers(self):
-        WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
-            (By.CLASS_NAME, "search-mate-entry")))
+        try:
+            WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
+                (By.CLASS_NAME, "search-mate-entry")))
+        except TimeoutException:
+            print("No offers found")
         unfiltered_offers = self.driver.find_elements(By.XPATH,
                                                      '//li[contains(@class, "search-mate-entry")]')
 
@@ -120,10 +123,12 @@ class WGZimmerScraper(ScraperBase):
         for offer in self.new_offers:
             self.seen_offers.append(hash(offer.text))
 
+        print(f"Initial offers: {len(self.new_offers)}")
+
         # Main loop checking for new offers
         while True:
-            sleep(random.randint(60, 180))
-            print("Refreshing...")
+            sleep(random.randint(60, 3*60))
+            print(f"Refreshing at {time.now().strftime('%H:%M:%S')}")
             self.driver.refresh()
             try:
                 self.get_new_offers()
@@ -149,9 +154,10 @@ if __name__ == "__main__":
                                 "profile.password_manager_enabled": False}
                       }
 
-    args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3",
+    # args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3",
+    #         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
+    args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3",
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
-    # args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3"]
 
     scraper = WGZimmerScraper(search_parameters, driver_options, args)
     scraper.run()
