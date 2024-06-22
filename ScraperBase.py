@@ -66,19 +66,6 @@ class ScraperBase:
         self.driver.find_element(By.XPATH, '//button[p[contains(., "Confirm choices")]]').click()
 
     def run(self):
-        # self.login()
-        # print("Starting to crawl...")
-        #
-        # # Initial listing of offers
-        # self.get_new_offers()
-        # for offer in self.new_offers:
-        #     self.seen_offers.append(hash(offer.text[:30]))
-        #
-        # # Main loop checking for new offers
-        # while True:
-        #     sleep(random.randint(60, 180))
-        #     self.refresh()
-        #     self.handle_offers()
         raise NotImplementedError
 
 
@@ -99,7 +86,7 @@ class WGZimmerScraper(ScraperBase):
         self.driver.find_element(By.XPATH, '//input[@value="Suchen"]').click()
 
     def get_new_offers(self):
-        WebDriverWait(self.driver, self.TIMEOUT).until(EC.visibility_of_element_located(
+        WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
             (By.CLASS_NAME, "search-mate-entry")))
         unfiltered_offers = self.driver.find_elements(By.XPATH,
                                                      '//li[contains(@class, "search-mate-entry")]')
@@ -162,8 +149,9 @@ if __name__ == "__main__":
                                 "profile.password_manager_enabled": False}
                       }
 
-    # args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3"]
-    args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3"]
+    args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3",
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
+    # args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3"]
 
     scraper = WGZimmerScraper(search_parameters, driver_options, args)
     scraper.run()
