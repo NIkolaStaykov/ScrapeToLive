@@ -9,7 +9,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 from datetime import datetime as time
 import json
-import re
 
 from playsound import playsound
 
@@ -86,11 +85,8 @@ class WGZimmerScraper(ScraperBase):
         self.driver.find_element(By.XPATH, '//input[@value="Suchen"]').click()
 
     def get_new_offers(self):
-        try:
-            WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
-                (By.CLASS_NAME, "search-mate-entry")))
-        except TimeoutException:
-            print("No offers found")
+        WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
+            (By.CLASS_NAME, "search-mate-entry")))
         unfiltered_offers = self.driver.find_elements(By.XPATH,
                                                      '//li[contains(@class, "search-mate-entry")]')
 
@@ -127,16 +123,14 @@ class WGZimmerScraper(ScraperBase):
 
         # Main loop checking for new offers
         while True:
+            # sleep(random.randint(2, 4))
             sleep(random.randint(60, 3*60))
             print(f"Refreshing at {time.now().strftime('%H:%M:%S')}")
             self.driver.refresh()
-            try:
-                self.get_new_offers()
-                self.handle_offers()
-            except TimeoutException:
-                self.enter_search_parameters()
-                self.get_new_offers()
-                self.handle_offers()
+            self.driver.get(self.HOME_URL)
+            self.enter_search_parameters()
+            self.get_new_offers()
+            self.handle_offers()
 
 
 if __name__ == "__main__":
@@ -154,10 +148,10 @@ if __name__ == "__main__":
                                 "profile.password_manager_enabled": False}
                       }
 
-    # args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3",
-    #         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
-    args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3",
+    args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3",
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
+    # args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3",
+    #         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
 
     scraper = WGZimmerScraper(search_parameters, driver_options, args)
     scraper.run()

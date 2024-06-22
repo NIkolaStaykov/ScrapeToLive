@@ -15,7 +15,7 @@ conda create --name scraping --file req.txt
 ```bash
 conda activate scraping
 ```
-3) Update your search parameters in the 'search_parameters.json' file.
+3) Update your search parameters in the **search_parameters.json** file.
 4) Start the scraper with the following command:
 ```bash
 python ScraperBase.py
