@@ -1,11 +1,14 @@
 import random
-from selenium import webdriver
+from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
 from time import sleep
 from datetime import datetime as time
 import json
@@ -19,19 +22,34 @@ def beep(times=1):
 
 
 class ScraperBase:
-    TIMEOUT = 5
+    TIMEOUT = 10
+    PROXIES = ["https://189.240.60.168:9090",
+                "https://189.240.60.169:9090",
+                "https://189.240.60.171:9090",
+                "https://219.145.250.129:7890",
+                "https://45.12.150.82:8080",
+                "https://45.140.143.77:18080",
+                "https://88.198.212.91:3128",
+                "https://89.43.31.134:3128"]
 
     def __init__(self, driver_options=None, args=None):
         self.driver = None
         self.new_offers = None
         self.seen_offers = []
         self.driver = None
+        self.proxy = random.choice(self.PROXIES)
         self.setup_chrome_driver(driver_options, args)
 
     def setup_chrome_driver(self, driver_options=None, args=None):
         args = args or []
         driver_options = driver_options or {}
-
+        print(f"Using proxy: {self.proxy}")
+        seleniumwire_options = {
+            # "proxy": {
+            #     "http": self.proxy,
+            #     "https": self.proxy
+            # },
+        }
         chrome_options = Options()
 
         for (k, v) in driver_options.items():
@@ -40,7 +58,11 @@ class ScraperBase:
             chrome_options.add_argument(arg)
 
         # create the initial window
-        self.driver = webdriver.Chrome(options=chrome_options)
+        self.driver = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()),
+            seleniumwire_options=seleniumwire_options,
+            options=chrome_options
+        )
 
     def login(self):
         raise NotImplementedError
@@ -85,8 +107,11 @@ class WGZimmerScraper(ScraperBase):
         self.driver.find_element(By.XPATH, '//input[@value="Suchen"]').click()
 
     def get_new_offers(self):
-        WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
-            (By.CLASS_NAME, "search-mate-entry")))
+        try:
+            WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
+                (By.CLASS_NAME, "search-mate-entry")))
+        except TimeoutException:
+            return False
         unfiltered_offers = self.driver.find_elements(By.XPATH,
                                                      '//li[contains(@class, "search-mate-entry")]')
 
@@ -97,6 +122,8 @@ class WGZimmerScraper(ScraperBase):
                 continue
             elif hash(offer.text) not in self.seen_offers:
                 self.new_offers.append(offer)
+
+        return True
 
     def handle_offer(self, offer: WebElement):
         beep()
@@ -115,7 +142,7 @@ class WGZimmerScraper(ScraperBase):
         print("Starting to crawl...")
 
         # Initial listing of offers
-        self.get_new_offers()
+        status = self.get_new_offers()
         for offer in self.new_offers:
             self.seen_offers.append(hash(offer.text))
 
@@ -123,20 +150,27 @@ class WGZimmerScraper(ScraperBase):
 
         # Main loop checking for new offers
         while True:
-            # sleep(random.randint(2, 4))
-            sleep(random.randint(60, 3*60))
-            print(f"Refreshing at {time.now().strftime('%H:%M:%S')}")
-            self.driver.refresh()
-            self.driver.get(self.HOME_URL)
-            self.enter_search_parameters()
-            self.get_new_offers()
-            self.handle_offers()
+            try:
+                # sleep(random.randint(2, 4))
+                sleep(random.randint(75, 180))
+                print(f"Refreshing at {time.now().strftime('%H:%M:%S')}")
+                # THIS TRIGGERS THE RECAPTCHA AND RETURNS US TO THE HOME PAGE
+                self.driver.refresh()
+                self.enter_search_parameters()
+                status = self.get_new_offers()
+                if not status:
+                    print("Something is actively crashing")
+                    continue
+                self.handle_offers()
+            except Exception as e:
+                print(f"An error occurred: {e}")
+
 
 
 if __name__ == "__main__":
     search_parameters_path = "search_parameters.json"
     search_parameters = json.load(open(search_parameters_path))
-    # Parse the min and max search price to string of the form 1.100, they are in the from 1100
+    # Parse the min and max search price to string of the form 1.100, they are in the form 1100
     if len(search_parameters['price_min']) >= 4:
         search_parameters['price_min'] = f"{search_parameters['price_min'][:-3]}.{search_parameters['price_min'][-3:]}"
     if len(search_parameters['price_max']) >= 4:
@@ -148,10 +182,9 @@ if __name__ == "__main__":
                                 "profile.password_manager_enabled": False}
                       }
 
-    args = ["--start-fullscreen", "--headless", "window-size=1920x1080", "--log-level=3",
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
-    # args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3",
-    #         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36"]
+    args = ["--start-fullscreen", "window-size=1920x1080", "--log-level=3",
+            "user-agent=Mozilla/127.0 (Windows NT 10.0; Win64; x64) Chrome/128.0.6555.0"]
+    # args.append("--headless")
 
     scraper = WGZimmerScraper(search_parameters, driver_options, args)
     scraper.run()
