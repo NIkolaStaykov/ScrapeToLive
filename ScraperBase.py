@@ -103,7 +103,7 @@ class WGZimmerScraper(ScraperBase):
     def enter_search_parameters(self):
         self.driver.find_element(By.XPATH, '//select[@name="priceMax"]').send_keys(f'{self.search_parameters["price_max"]}')
         self.driver.find_element(By.XPATH, '//select[@name="priceMin"]').send_keys(f'{self.search_parameters["price_min"]}')
-        self.driver.find_element(By.XPATH, '//select[@name="wgState"]').send_keys('Zürich (Stadt)')
+        # self.driver.find_element(By.XPATH, '//select[@name="wgState"]').send_keys('Zürich (Stadt)')
         self.driver.find_element(By.XPATH, '//input[@value="Suchen"]').click()
 
     def get_new_offers(self):
@@ -114,11 +114,13 @@ class WGZimmerScraper(ScraperBase):
             return False
         unfiltered_offers = self.driver.find_elements(By.XPATH,
                                                      '//li[contains(@class, "search-mate-entry")]')
-
+        zurich_offers = filter(lambda offer:
+                                "Zürich" in offer.find_element(By.XPATH, './/span[contains(@class, "thumbState")]').text,
+                                unfiltered_offers)
         self.new_offers = []
-        for offer in unfiltered_offers:
+        for offer in zurich_offers:
             date = offer.find_element(By.XPATH, './/div[contains(@class, "create-date")]').text
-            if not date == time.now().strftime('%#d.%#m.%Y'):
+            if not date == time.now().strftime('%-d.%-m.%Y'):
                 continue
             elif hash(offer.text) not in self.seen_offers:
                 self.new_offers.append(offer)
