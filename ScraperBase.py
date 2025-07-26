@@ -37,13 +37,13 @@ class ScraperBase:
         self.new_offers = None
         self.seen_offers = []
         self.driver = None
-        self.proxy = random.choice(self.PROXIES)
+        # self.proxy = random.choice(self.PROXIES)
         self.setup_chrome_driver(driver_options, args)
 
     def setup_chrome_driver(self, driver_options=None, args=None):
         args = args or []
         driver_options = driver_options or {}
-        print(f"Using proxy: {self.proxy}")
+        # print(f"Using proxy: {self.proxy}")
         seleniumwire_options = {
             # "proxy": {
             #     "http": self.proxy,
@@ -120,7 +120,8 @@ class WGZimmerScraper(ScraperBase):
         self.new_offers = []
         for offer in zurich_offers:
             date = offer.find_element(By.XPATH, './/div[contains(@class, "create-date")]').text
-            if not date == time.now().strftime('%-d.%-m.%Y'):
+            now = time.now()
+            if not date == f"{now.day}.{now.month}.{now.year}":
                 continue
             elif hash(offer.text) not in self.seen_offers:
                 self.new_offers.append(offer)
