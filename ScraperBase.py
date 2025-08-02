@@ -106,12 +106,28 @@ class WGZimmerScraper(ScraperBase):
         # self.driver.find_element(By.XPATH, '//select[@name="wgState"]').send_keys('Zürich (Stadt)')
         self.driver.find_element(By.XPATH, '//input[@value="Suchen"]').click()
 
+    def order_by_date(self):
+        try:
+            WebDriverWait(self.driver, self.TIMEOUT).until(EC.visibility_of_element_located(
+                (By.XPATH, '//a[contains(text(), "Aufgegeben")]')))
+            link = self.driver.find_element(By.XPATH, '//a[contains(text(), "Aufgegeben")]').get_attribute('href')
+            # Replace ascending order with descending order if needed
+            if "orderDir=asc" in link:
+                link = link.replace("orderDir=asc", "orderDir=desc")
+            self.driver.get(link)
+        except TimeoutException:
+            print("Timeout while trying to order by date.")
+            return False
+        return True
+
     def get_new_offers(self):
         try:
             WebDriverWait(self.driver, self.TIMEOUT).until(EC.presence_of_element_located(
                 (By.CLASS_NAME, "search-mate-entry")))
         except TimeoutException:
             return False
+
+        self.order_by_date()
         unfiltered_offers = self.driver.find_elements(By.XPATH,
                                                      '//li[contains(@class, "search-mate-entry")]')
         zurich_offers = filter(lambda offer:
