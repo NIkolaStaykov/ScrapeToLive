@@ -174,8 +174,9 @@ class WGZimmerScraper(ScraperBase):
                 sleep(random.randint(75, 180))
                 print(f"Refreshing at {time.now().strftime('%H:%M:%S')}")
                 # THIS TRIGGERS THE RECAPTCHA AND RETURNS US TO THE HOME PAGE
-                self.driver.refresh()
-                self.enter_search_parameters()
+                # self.driver.refresh()
+                self.driver.get(self.HOME_URL)
+                # self.enter_search_parameters()
                 status = self.get_new_offers()
                 if not status:
                     print("Something is actively crashing")
